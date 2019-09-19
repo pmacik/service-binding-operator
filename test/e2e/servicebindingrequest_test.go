@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -39,6 +40,7 @@ var (
 	retryInterval  = time.Second * 5
 	timeout        = time.Second * 120
 	cleanupTimeout = time.Second * 5
+	loopCounter    = 0
 )
 
 // TestAddSchemesToFramework starting point of the test, it declare the CRDs that will be using
@@ -215,10 +217,10 @@ func PreServiceBindingRequest(t *testing.T) {
 	ctx := framework.NewTestCtx(t)
 	defer ctx.Cleanup()
 
-	ns, f := bootstrapNamespace(t, ctx)
+	// ns, f := bootstrapNamespace(t, ctx, true)
 
 	// executing testing steps on operator
-	preCreateServiceBindingRequestTest(t, ctx, f, ns)
+	// preCreateServiceBindingRequestTest(t, ctx, f, ns)
 }
 
 // assertDeploymentEnvFrom execute the inspection of a deployment type, making sure the containers
@@ -322,10 +324,11 @@ func retry(attempts int, sleep time.Duration, fn func() error) error {
 func serviceBindingRequestTest(t *testing.T, ctx *framework.TestCtx, f *framework.Framework, ns string, steps []Step) {
 	todoCtx := context.TODO()
 
-	name := "e2e-service-binding-request"
-	resourceRef := "e2e-db-testing"
-	secretName := "e2e-db-credentials"
-	appName := "e2e-application"
+	loopCounter++
+	name := "e2e-service-binding-request" + strconv.Itoa(loopCounter)
+	resourceRef := "e2e-db-testing" + strconv.Itoa(loopCounter)
+	secretName := "e2e-db-credentials" + strconv.Itoa(loopCounter)
+	appName := "e2e-application" + strconv.Itoa(loopCounter)
 	matchLabels := map[string]string{
 		"connects-to": "database",
 		"environment": "e2e",
