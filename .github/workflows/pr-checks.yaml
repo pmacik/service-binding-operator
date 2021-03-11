@@ -69,6 +69,7 @@ jobs:
 
     env:
       EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift"
+      RESULTS_PATH: "out/acceptance-tests"
 
     steps:
       - name: Checkout Git Repository
@@ -94,6 +95,15 @@ jobs:
           eval $(minikube docker-env)
           make OPERATOR_REPO_REF=$(minikube ip):5000/sbo SKIP_REGISTRY_LOGIN=true release-operator -o registry-login test-acceptance-with-bundle
 
+      - name: Setup Testspace
+        uses: testspace-com/setup-testspace@v1
+        with:
+          domain: ${{ github.repository_owner }}
+
+      - name: Publish sh result to Testspace
+        run: |
+          testspace out/acceptance-tests/TEST*.xml 
+        if: always()
 
   acceptance_without_olm:
     name: Acceptance tests running on Kubernetes without using OLM
@@ -103,6 +113,7 @@ jobs:
       EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift --tags=~@olm"
       UMOCI_VERSION: "0.4.5"
       OPERATOR_VERSION: "0.4.0"
+      RESULTS_PATH: "out/acceptance-tests"
 
     steps:
       - name: Checkout Git Repository
@@ -135,3 +146,13 @@ jobs:
           make OPERATOR_REPO_REF=$(minikube ip):5000/sbo SKIP_REGISTRY_LOGIN=true release-operator -o registry-login release-manifests
           kubectl apply -f out/release.yaml
           make test-acceptance
+
+      - name: Setup Testspace
+        uses: testspace-com/setup-testspace@v1
+        with:
+          domain: ${{ github.repository_owner }}
+
+      - name: Publish sh result to Testspace
+        run: |
+          testspace out/acceptance-tests/TEST*.xml 
+        if: always()
