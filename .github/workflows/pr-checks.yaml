@@ -16,6 +16,8 @@ env:
   TEST_ACCEPTANCE_CLI: "kubectl"
   CONTAINER_RUNTIME: "docker"
   TEST_RESULTS: "out/acceptance-tests"
+  QUAY_USERNAME: "pmacik+sbo_pr_checks"
+  QUAY_TOKEN: "LDPW83WIWG991E5W4NHAS18Q1K3GOEHWGVWZVTBOFLQPSBDT6EB8UP35G0P24412"
 
 jobs:
   lint:
@@ -64,13 +66,9 @@ jobs:
           verbose: true
           fail_ci_if_error: true
 
-  acceptance:
-    name: Acceptance Tests with Kubernetes and using OLM
+  pr-dev-release:
+    name: Release PR bundle and index images
     runs-on: ubuntu-20.04
-
-    env:
-      EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift --tags=~@examples"
-      TEST_RUN: Acceptance_tests_Kubernetes_with_OLM
 
     steps:
       - name: Checkout Git Repository
@@ -87,96 +85,137 @@ jobs:
           python-version: "3.7"
           architecture: "x64"
 
-      - name: Setup-cli
+      - name: Setup CLI
         uses: ./.github/actions/setup-cli
 
-      - name: Acceptance tests
-        timeout-minutes: 60
+      - name: Release bundle and index images
         run: |
-          eval $(minikube docker-env)
-          make OPERATOR_REPO_REF=$(minikube ip):5000/sbo SKIP_REGISTRY_LOGIN=true release-operator -o registry-login test-acceptance-with-bundle
+          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          export OPERATOR_IMAGE_REF=quay.io/pmacik/sbo-pr-checks:testing-pr-$PR_NUMBER-$GITHUB_SHA
+          export OPERATOR_BUNDLE_IMAGE_REF=${OPERATOR_IMAGE_REF}-bundle
+          export OPERATOR_INDEX_IMAGE_REF=${OPERATOR_IMAGE_REF}-index
+          make release-operator
 
-      - name: Collect logs
-        run: |
-          kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n operators | tail -1) -n operators > ${TEST_RESULTS}/sbo.log
-        if: always()
+  # acceptance:
+  #   name: Acceptance Tests with Kubernetes and using OLM
+  #   runs-on: ubuntu-20.04
 
-      - name: Setup Testspace
-        uses: testspace-com/setup-testspace@v1
-        with:
-          domain: ${{ github.repository_owner }}
-        if: always()
+  #   env:
+  #     EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift --tags=~@examples"
+  #     TEST_RUN: Acceptance_tests_Kubernetes_with_OLM
 
-      - name: Publish tests results to Testspace
-        run: |
-          testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
-        if: always()
+  #   steps:
+  #     - name: Checkout Git Repository
+  #       uses: actions/checkout@v2
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: kubernetes-with-olm-test-results
-          path: ${{ env.TEST_RESULTS }}
-        if: always()
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v2
+  #       with:
+  #         go-version: "^1.15.6"
 
-  acceptance_without_olm:
-    name: Acceptance tests running on Kubernetes without using OLM
-    runs-on: ubuntu-20.04
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: "3.7"
+  #         architecture: "x64"
 
-    env:
-      EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift --tags=~@olm"
-      TEST_RUN: Acceptance_tests_Kubernetes_without_OLM
-      UMOCI_VERSION: "0.4.5"
+  #     - name: Setup-cli
+  #       uses: ./.github/actions/setup-cli
 
-    steps:
-      - name: Checkout Git Repository
-        uses: actions/checkout@v2
+  #     - name: Acceptance tests
+  #       timeout-minutes: 60
+  #       run: |
+  #         PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+  #         OPERATOR_IMAGE_REF=quay.io/pmacik/sbo-pr-checks:testing-pr-$PR_NUMBER-$GITHUB_SHA
+  #         OPERATOR_BUNDLE_IMAGE_REF=${OPERATOR_IMAGE_REF}-bundle
+  #         OPERATOR_INDEX_IMAGE_REF=${OPERATOR_IMAGE_REF}-index
+  #         make SKIP_REGISTRY_LOGIN=true -o registry-login test-acceptance-with-bundle
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: "^1.15.6"
+  #     - name: Collect logs
+  #       run: |
+  #         kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n operators | tail -1) -n operators > ${TEST_RESULTS}/sbo.log
+  #       if: always()
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.7"
-          architecture: "x64"
+  #     - name: Setup Testspace
+  #       uses: testspace-com/setup-testspace@v1
+  #       with:
+  #         domain: ${{ github.repository_owner }}
+  #       if: always()
 
-      - name: Set up CLI
-        uses: ./.github/actions/setup-cli
+  #     - name: Publish tests results to Testspace
+  #       run: |
+  #         testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
+  #       if: always()
 
-      - name: Setup umoci cli
-        run: |
-          curl -Lo umoci https://github.com/opencontainers/umoci/releases/download/v${UMOCI_VERSION}/umoci.amd64
-          chmod +x umoci
-          mv -v umoci $GITHUB_WORKSPACE/bin/
+  #     - uses: actions/upload-artifact@v2
+  #       with:
+  #         name: kubernetes-with-olm-test-results
+  #         path: ${{ env.TEST_RESULTS }}
+  #       if: always()
 
-      - name: Acceptance tests against vanilla k8s without OLM
-        timeout-minutes: 60
-        run: |
-          eval $(minikube docker-env)
-          make OPERATOR_REPO_REF=$(minikube ip):5000/sbo SKIP_REGISTRY_LOGIN=true release-operator -o registry-login release-manifests
-          kubectl apply -f out/release.yaml
-          make TEST_ACCEPTANCE_START_SBO=remote test-acceptance
+  # acceptance_without_olm:
+  #   name: Acceptance tests running on Kubernetes without using OLM
+  #   runs-on: ubuntu-20.04
 
-      - name: Collect logs
-        run: |
-          kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n service-binding-operator | tail -1) -n service-binding-operator > ${TEST_RESULTS}/sbo.log
-        if: always()
+  #   env:
+  #     EXTRA_BEHAVE_ARGS: "--tags=~@knative --tags=~@openshift --tags=~@olm"
+  #     TEST_RUN: Acceptance_tests_Kubernetes_without_OLM
+  #     UMOCI_VERSION: "0.4.5"
 
-      - name: Setup Testspace
-        uses: testspace-com/setup-testspace@v1
-        with:
-          domain: ${{ github.repository_owner }}
-        if: always()
+  #   steps:
+  #     - name: Checkout Git Repository
+  #       uses: actions/checkout@v2
 
-      - name: Publish tests results to Testspace
-        run: |
-          testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
-        if: always()
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v2
+  #       with:
+  #         go-version: "^1.15.6"
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: kubernetes-without-olm-test-results
-          path: ${{ env.TEST_RESULTS }}
-        if: always()
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: "3.7"
+  #         architecture: "x64"
+
+  #     - name: Set up CLI
+  #       uses: ./.github/actions/setup-cli
+
+  #     - name: Setup umoci cli
+  #       run: |
+  #         curl -Lo umoci https://github.com/opencontainers/umoci/releases/download/v${UMOCI_VERSION}/umoci.amd64
+  #         chmod +x umoci
+  #         mv -v umoci $GITHUB_WORKSPACE/bin/
+
+  #     - name: Acceptance tests against vanilla k8s without OLM
+  #       timeout-minutes: 60
+  #       run: |
+  #         PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+  #         OPERATOR_IMAGE_REF=quay.io/pmacik/sbo-pr-checks:testing-pr-$PR_NUMBER-$GITHUB_SHA
+  #         OPERATOR_BUNDLE_IMAGE_REF=${OPERATOR_IMAGE_REF}-bundle
+  #         OPERATOR_INDEX_IMAGE_REF=${OPERATOR_IMAGE_REF}-index
+  #         eval $(minikube docker-env)
+  #         make release-manifests
+  #         kubectl apply -f out/release.yaml
+  #         make TEST_ACCEPTANCE_START_SBO=remote test-acceptance
+
+  #     - name: Collect logs
+  #       run: |
+  #         kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n service-binding-operator | tail -1) -n service-binding-operator > ${TEST_RESULTS}/sbo.log
+  #       if: always()
+
+  #     - name: Setup Testspace
+  #       uses: testspace-com/setup-testspace@v1
+  #       with:
+  #         domain: ${{ github.repository_owner }}
+  #       if: always()
+
+  #     - name: Publish tests results to Testspace
+  #       run: |
+  #         testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
+  #       if: always()
+
+  #     - uses: actions/upload-artifact@v2
+  #       with:
+  #         name: kubernetes-without-olm-test-results
+  #         path: ${{ env.TEST_RESULTS }}
+  #       if: always()
