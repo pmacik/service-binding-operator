@@ -1,0 +1,77 @@
+name: "PR checks - Push operator images"
+
+on:
+  pull_request_target:
+    branches:
+      - master
+
+env:
+  GO111MODULE: on
+  SDK_VERSION: "1.3.0"
+  OPM_VERSION: "1.15.2"
+  MINIKUBE_WANTUPDATENOTIFICATION: false
+  MINIKUBE_WANTREPORTERRORPROMPT: false
+  K8S_VERSION: "1.19.2"
+  MINIKUBE_VERSION: "1.15.1"
+  TEST_ACCEPTANCE_CLI: "kubectl"
+  CONTAINER_RUNTIME: "podman"
+  TEST_RESULTS: "out/acceptance-tests"
+
+jobs:
+  push-operator-images:
+    name: "Push operator images (PR)"
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout Git Repository
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.15.6"
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.7"
+          architecture: "x64"
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+
+      - name: Wait for build
+        uses: lewagon/wait-on-check-action@master
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: "Build operator images (PR)"
+          repo-token: ${{ secrets.PAT }}
+          wait-interval: 60
+
+      - name: Sleep for 15 seconds
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '15s'
+
+      - name: Extract artifacts
+        uses: marcofaggian/action-download-multiple-artifacts@master
+        with:
+          names: operator-images-${{github.event.pull_request.number}}-${{github.event.pull_request.head.sha}}
+
+      - name: Push operator, bundle and index images
+        run: |
+          TAG=$(cat operator-tag.txt)
+          export OPERATOR_IMAGE_REF=quay.io/pmacik/sbo-pr-checks:${TAG}
+          export OPERATOR_BUNDLE_IMAGE_REF=${OPERATOR_IMAGE_REF}-bundle
+          export OPERATOR_INDEX_IMAGE_REF=${OPERATOR_IMAGE_REF}-index
+
+          podman load -i operator-image.tar
+          podman load -i operator-bundle.tar
+
+          podman login quay.io --username ${{secrets.QUAY_USERNAME}} --password ${{secrets.QUAY_TOKEN}} --authfile .authfile
+
+          podman push --authfile .authfile ${OPERATOR_IMAGE_REF}
+          podman push --authfile .authfile ${OPERATOR_BUNDLE_IMAGE_REF}
+
+          opm index add -u podman -p podman --bundles ${OPERATOR_BUNDLE_IMAGE_REF} --tag ${OPERATOR_INDEX_IMAGE_REF}
+          podman push --authfile .authfile ${OPERATOR_INDEX_IMAGE_REF}
