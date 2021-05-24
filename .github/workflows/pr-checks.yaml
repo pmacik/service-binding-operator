@@ -14,7 +14,7 @@ env:
   K8S_VERSION: "1.19.2"
   MINIKUBE_VERSION: "1.15.1"
   TEST_ACCEPTANCE_CLI: "kubectl"
-  CONTAINER_RUNTIME: "docker"
+  CONTAINER_RUNTIME: "podman"
   TEST_RESULTS: "out/acceptance-tests"
 
 jobs:
@@ -89,28 +89,62 @@ jobs:
 
       - name: Setup-cli
         uses: ./.github/actions/setup-cli
+        with:
+          kubectl: true
+          minikube: true
+          start-minikube: true
+
+      - name: Wait for push
+        uses: lewagon/wait-on-check-action@1b1630e169116b58a4b933d5ad7effc46d3d312d
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: "Push operator images (PR)"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 60
+
+      - name: Extract image references
+        uses: marcofaggian/action-download-multiple-artifacts@v3.0.8
+        with:
+          names: operator-refs-${{github.event.pull_request.number}}-${{github.event.pull_request.head.sha}}
 
       - name: Acceptance tests
         timeout-minutes: 60
         run: |
-          eval $(minikube docker-env)
-          make OPERATOR_REPO_REF=$(minikube ip):5000/sbo SKIP_REGISTRY_LOGIN=true release-operator -o registry-login test-acceptance-with-bundle
+          export OPERATOR_INDEX_IMAGE_REF=$(cat operator-index.ref)
+          export CATSRC_NAME=sbo-pr-checks
 
-      - name: Collect logs
+          make SKIP_REGISTRY_LOGIN=true -o registry-login test-acceptance-with-bundle
+
+      - name: Collect Kube resources
+        continue-on-error: true
         run: |
+          mkdir -p ${TEST_RESULTS}
+          for res in pods deployments; do
+            for ns in operators olm; do
+              kubectl get $res -n $ns --ignore-not-found=true -o yaml > ${TEST_RESULTS}/${res}.${ns}.yaml
+            done
+          done
+          kubectl get catsrc -n olm -o yaml > ${TEST_RESULTS}/catalogsources.yaml
+          kubectl get subscription -n operators -o yaml > ${TEST_RESULTS}/subscriptions.yaml
+        if: always()
+
+      - name: Collect SBO log
+        continue-on-error: true
+        run: |
+          mkdir -p ${TEST_RESULTS}
           kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n operators | tail -1) -n operators > ${TEST_RESULTS}/sbo.log
         if: always()
 
-      - name: Setup Testspace
-        uses: testspace-com/setup-testspace@v1
-        with:
-          domain: ${{ github.repository_owner }}
-        if: always()
+      # - name: Setup Testspace
+      #   uses: testspace-com/setup-testspace@v1
+      #   with:
+      #     domain: ${{ github.repository_owner }}
+      #   if: always()
 
-      - name: Publish tests results to Testspace
-        run: |
-          testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
-        if: always()
+      # - name: Publish tests results to Testspace
+      #   run: |
+      #     testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
+      #   if: always()
 
       - uses: actions/upload-artifact@v2
         with:
@@ -144,6 +178,10 @@ jobs:
 
       - name: Set up CLI
         uses: ./.github/actions/setup-cli
+        with:
+          kubectl: true
+          minikube: true
+          start-minikube: true
 
       - name: Setup umoci cli
         run: |
@@ -151,29 +189,58 @@ jobs:
           chmod +x umoci
           mv -v umoci $GITHUB_WORKSPACE/bin/
 
+      - name: Wait for push
+        uses: lewagon/wait-on-check-action@master
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: "Push operator images (PR)"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 60
+
+      - name: Download image references
+        uses: marcofaggian/action-download-multiple-artifacts@master
+        with:
+          names: operator-refs-${{github.event.pull_request.number}}-${{github.event.pull_request.head.sha}}
+
       - name: Acceptance tests against vanilla k8s without OLM
         timeout-minutes: 60
         run: |
+          export OPERATOR_BUNDLE_IMAGE_REF=$(cat operator-bundle.ref)
+          export OPERATOR_INDEX_IMAGE_REF=$(cat operator-index.ref)
+
           eval $(minikube docker-env)
-          make OPERATOR_REPO_REF=$(minikube ip):5000/sbo SKIP_REGISTRY_LOGIN=true release-operator -o registry-login release-manifests
+          make release-manifests
           kubectl apply -f out/release.yaml
           make TEST_ACCEPTANCE_START_SBO=remote test-acceptance
 
-      - name: Collect logs
+      - name: Collect Kube resources
+        continue-on-error: true
         run: |
-          kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n service-binding-operator | tail -1) -n service-binding-operator > ${TEST_RESULTS}/sbo.log
+          mkdir -p ${TEST_RESULTS}
+          for res in pods deployments; do
+            for ns in operators olm; do
+              kubectl get $res -n $ns --ignore-not-found=true -o yaml > ${TEST_RESULTS}/${res}.${ns}.yaml
+            done
+          done
         if: always()
 
-      - name: Setup Testspace
-        uses: testspace-com/setup-testspace@v1
-        with:
-          domain: ${{ github.repository_owner }}
+      - name: Collect SBO log
+        continue-on-error: true
+        run: |
+          mkdir -p ${TEST_RESULTS}
+          kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n operators | tail -1) -n operators > ${TEST_RESULTS}/sbo.log
         if: always()
 
-      - name: Publish tests results to Testspace
-        run: |
-          testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
-        if: always()
+      # - name: Setup Testspace
+      #   uses: testspace-com/setup-testspace@v1
+      #   with:
+      #     domain: ${{ github.repository_owner }}
+      #   if: always()
+
+      # - name: Publish tests results to Testspace
+      #   run: |
+      #     testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
+      #   if: always()
 
       - uses: actions/upload-artifact@v2
         with:
