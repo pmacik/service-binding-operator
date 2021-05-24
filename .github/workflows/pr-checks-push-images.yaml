@@ -26,11 +26,10 @@ jobs:
       ${{ github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success' }}
 
-    env:
-      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
-      QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
-
     steps:
+      - name: Checkout Git Repository
+        uses: actions/checkout@v2
+
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
@@ -73,12 +72,14 @@ jobs:
           export OPERATOR_IMAGE_REF=quay.io/pmacik/sbo-pr-checks:${TAG}
           export OPERATOR_BUNDLE_IMAGE_REF=${OPERATOR_IMAGE_REF}-bundle
           export OPERATOR_INDEX_IMAGE_REF=${OPERATOR_IMAGE_REF}-index
-          
+
           podman load -i images/operator-image.tar
           podman load -i images/operator-bundle.tar
 
-          podman push ${OPERATOR_IMAGE_REF}
-          podman push ${OPERATOR_BUNDLE_IMAGE_REF}
+          podman login quay.io --username ${{secrets.QUAY_USERNAME}} --password ${{secrets.QUAY_TOKEN}} --authfile .authfile
+
+          podman push --authfile .authfile ${OPERATOR_IMAGE_REF}
+          podman push --authfile .authfile ${OPERATOR_BUNDLE_IMAGE_REF}
 
           opm index add -u podman -p podman --bundles ${OPERATOR_BUNDLE_IMAGE_REF} --tag ${OPERATOR_INDEX_IMAGE_REF}
-          podman push ${OPERATOR_INDEX_IMAGE_REF}
+          podman push --authfile .authfile ${OPERATOR_INDEX_IMAGE_REF}
