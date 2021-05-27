@@ -45,7 +45,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Build operator images (PR)"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.PAT }}
           wait-interval: 15
 
       - name: Sleep for 15 seconds
