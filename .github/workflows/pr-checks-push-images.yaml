@@ -56,6 +56,7 @@ jobs:
       - name: Extract artifacts
         uses: marcofaggian/action-download-multiple-artifacts@v3.0.8
         with:
+          names: operator-images
           workflow: pr-checks-build-images.yaml
           pr: ${{github.event.pull_request.number}}
 
