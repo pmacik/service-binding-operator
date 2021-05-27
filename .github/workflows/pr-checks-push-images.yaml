@@ -46,7 +46,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Build operator images (PR)"
           repo-token: ${{ secrets.PAT }}
-          wait-interval: 15
+          wait-interval: 60
 
       - name: Sleep for 15 seconds
         uses: jakejarvis/wait-action@master
@@ -62,13 +62,13 @@ jobs:
 
       - name: Push operator, bundle and index images
         run: |
-          TAG=$(cat operator-images/operator-tag.txt)
+          TAG=$(cat operator-tag.txt)
           export OPERATOR_IMAGE_REF=quay.io/pmacik/sbo-pr-checks:${TAG}
           export OPERATOR_BUNDLE_IMAGE_REF=${OPERATOR_IMAGE_REF}-bundle
           export OPERATOR_INDEX_IMAGE_REF=${OPERATOR_IMAGE_REF}-index
 
-          podman load -i operator-images/operator-image.tar
-          podman load -i operator-images/operator-bundle.tar
+          podman load -i operator-image.tar
+          podman load -i operator-bundle.tar
 
           podman login quay.io --username ${{secrets.QUAY_USERNAME}} --password ${{secrets.QUAY_TOKEN}} --authfile .authfile
 

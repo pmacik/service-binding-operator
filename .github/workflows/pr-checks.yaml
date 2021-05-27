@@ -96,7 +96,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Push operator images (PR)"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 15
+          wait-interval: 60
 
       - name: Acceptance tests
         timeout-minutes: 60
@@ -185,7 +185,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Push operator images (PR)"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 15
+          wait-interval: 60
 
       - name: Acceptance tests against vanilla k8s without OLM
         timeout-minutes: 60
