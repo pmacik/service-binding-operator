@@ -96,7 +96,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Push operator images (PR)"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 5
+          wait-interval: 15
 
       - name: Acceptance tests
         timeout-minutes: 60
@@ -180,12 +180,12 @@ jobs:
           mv -v umoci $GITHUB_WORKSPACE/bin/
 
       - name: Wait for push
-        uses: lewagon/wait-on-check-action@v0.2
+        uses: lewagon/wait-on-check-action@master
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Push operator images (PR)"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 5
+          wait-interval: 15
 
       - name: Acceptance tests against vanilla k8s without OLM
         timeout-minutes: 60

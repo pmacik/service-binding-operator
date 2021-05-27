@@ -41,12 +41,12 @@ jobs:
         uses: ./.github/actions/setup-cli
 
       - name: Wait for build
-        uses: lewagon/wait-on-check-action@v0.2
+        uses: lewagon/wait-on-check-action@master
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Build operator images (PR)"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 5
+          wait-interval: 15
 
       - name: Sleep for 15 seconds
         uses: jakejarvis/wait-action@master
@@ -54,7 +54,7 @@ jobs:
           time: '15s'
 
       - name: Extract artifacts
-        uses: dawidd6/action-download-artifact@v2
+        uses: marcofaggian/action-download-multiple-artifacts@v3.0.8
         with:
           workflow: pr-checks-build-images.yaml
           pr: ${{github.event.pull_request.number}}
