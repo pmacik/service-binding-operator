@@ -58,9 +58,7 @@ jobs:
         with:
           names: operator-images
           workflow: pr-checks-build-images.yaml
-          #pr: ${{github.event.pull_request.number}}
-          event: pull_request
-          commit: ${{ github.event.pull_request.head.sha }}
+          pr: ${{github.event.pull_request.number}}
 
       - name: Push operator, bundle and index images
         run: |
