@@ -57,5 +57,5 @@ jobs:
       - name: Archive images
         uses: actions/upload-artifact@v2
         with:
-          name: operator-images
+          name: operator-images-${{github.event.pull_request.number}}
           path: artifacts/
