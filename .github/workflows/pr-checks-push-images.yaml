@@ -44,7 +44,7 @@ jobs:
         uses: lewagon/wait-on-check-action@master
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          running-workflow-name: build-operator-images
+          check-name: "Build operator images (PR)"
           repo-token: ${{ secrets.PAT }}
           wait-interval: 60
 
