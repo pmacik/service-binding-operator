@@ -76,11 +76,6 @@ jobs:
       - name: Checkout Git Repository
         uses: actions/checkout@v2
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: "^1.15.6"
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -90,8 +85,6 @@ jobs:
       - name: Setup-cli
         uses: ./.github/actions/setup-cli
         with:
-          kubectl: true
-          minikube: true
           start-minikube: true
 
       - name: Wait for push
@@ -165,11 +158,6 @@ jobs:
       - name: Checkout Git Repository
         uses: actions/checkout@v2
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: "^1.15.6"
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -179,8 +167,6 @@ jobs:
       - name: Set up CLI
         uses: ./.github/actions/setup-cli
         with:
-          kubectl: true
-          minikube: true
           start-minikube: true
 
       - name: Setup umoci cli
@@ -190,7 +176,7 @@ jobs:
           mv -v umoci $GITHUB_WORKSPACE/bin/
 
       - name: Wait for push
-        uses: lewagon/wait-on-check-action@master
+        uses: lewagon/wait-on-check-action@1b1630e169116b58a4b933d5ad7effc46d3d312d
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Push operator images (PR)"
@@ -198,7 +184,7 @@ jobs:
           wait-interval: 60
 
       - name: Download image references
-        uses: marcofaggian/action-download-multiple-artifacts@master
+        uses: marcofaggian/action-download-multiple-artifacts@v3.0.8
         with:
           names: operator-refs-${{github.event.pull_request.number}}-${{github.event.pull_request.head.sha}}
 
