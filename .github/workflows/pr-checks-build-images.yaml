@@ -7,10 +7,12 @@ on:
 
 env:
   SDK_VERSION: "1.3.0"
+  OPM_VERSION: "1.15.2"
   CONTAINER_RUNTIME: "podman"
   ARTIFACTS: "artifacts"
   #OPERATOR_REPO_REF: quay.io/redhat-developer/servicebinding-operator
-  OPERATOR_REPO_REF: quay.io/pmacik/sbo-pr-checks
+  REGISTRY_PREFIX: quay.io/pmacik
+  REPO: sbo-pr-checks
 
 jobs:
   build-operator-images:
@@ -25,32 +27,42 @@ jobs:
         uses: ./.github/actions/setup-cli
         with:
           operator-sdk: true
+          opm: true
+
+      - name: Setup local registry
+        run: |
+          .github/actions/setup-podman/setup-local-registry.sh
+          .github/actions/setup-podman/setup-podman-wrapper.sh
 
       - name: Build images
         env:
           PR_NUMBER: ${{github.event.pull_request.number}}
           PR_SHA: ${{github.event.pull_request.head.sha}}
+          OPERATOR_REPO_REF: ${{env.REGISTRY_PREFIX}}/${{env.REPO}}
         run: |
           export TAG=pr-${PR_NUMBER}-${PR_SHA:0:8}
           export OPERATOR_IMAGE_REF=${OPERATOR_REPO_REF}:${TAG}
           export OPERATOR_BUNDLE_IMAGE_REF=${OPERATOR_IMAGE_REF}-bundle
           export OPERATOR_INDEX_IMAGE_REF=${OPERATOR_IMAGE_REF}-index
-          export OPERATOR_IMAGE_SHA_REF=${OPERATOR_IMAGE_REF}
 
-          make SKIP_REGISTRY_LOGIN=true -o registry-login -o push-image -o push-bundle-image image bundle-image
+          which podman
+
+          BUILDAH_FORMAT=docker make SKIP_REGISTRY_LOGIN=true release-operator -o registry-login
+
           mkdir -p ${ARTIFACTS}
-          podman save ${OPERATOR_IMAGE_REF} > ${ARTIFACTS}/operator-image.tar
-          podman save ${OPERATOR_BUNDLE_IMAGE_REF} > ${ARTIFACTS}/operator-bundle.tar
 
           echo -n "${OPERATOR_INDEX_IMAGE_REF}" > ${ARTIFACTS}/operator-index.ref
           echo -n "${OPERATOR_BUNDLE_IMAGE_REF}" > ${ARTIFACTS}/operator-bundle.ref
           echo -n "${OPERATOR_IMAGE_REF}" > ${ARTIFACTS}/operator-image.ref
 
+          podman stop reg
+          tar -czvf ${ARTIFACTS}/registry.tar.gz -C ${GITHUB_WORKSPACE} registry
+
       - name: Archive images
         uses: actions/upload-artifact@v2
         with:
           name: operator-images-${{github.event.pull_request.number}}-${{github.event.pull_request.head.sha}}
-          path: ${{env.ARTIFACTS}}/*.tar
+          path: ${{env.ARTIFACTS}}/*.tar.gz
 
       - name: Archive image references
         uses: actions/upload-artifact@v2

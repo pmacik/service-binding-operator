@@ -170,7 +170,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 60
 
-      - name: Download image references
+      - name: Extract image references
         uses: marcofaggian/action-download-multiple-artifacts@v3.0.8
         with:
           names: operator-refs-${{github.event.pull_request.number}}-${{github.event.pull_request.head.sha}}

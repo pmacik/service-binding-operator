@@ -6,7 +6,8 @@ on:
       - master
 
 env:
-  OPM_VERSION: "1.15.2"
+  REGISTRY_PREFIX: quay.io/pmacik
+  REPO: sbo-pr-checks
 
 jobs:
   push-operator-images:
@@ -19,8 +20,6 @@ jobs:
 
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
-        with:
-          opm: true
 
       - name: Wait for build
         uses: lewagon/wait-on-check-action@1b1630e169116b58a4b933d5ad7effc46d3d312d
@@ -35,24 +34,17 @@ jobs:
         with:
           names: operator-images-${{github.event.pull_request.number}}-${{github.event.pull_request.head.sha}}
 
-      - name: Download image references
-        uses: marcofaggian/action-download-multiple-artifacts@v3.0.8
-        with:
-          names: operator-refs-${{github.event.pull_request.number}}-${{github.event.pull_request.head.sha}}
+      - name: Setup local registry
+        run: |
+          tar -xvf registry.tar.gz
+          .github/actions/setup-podman/setup-local-registry.sh
 
       - name: Push operator, bundle and index images
         run: |
-          export OPERATOR_IMAGE_REF=$(cat operator-image.ref)
-          export OPERATOR_BUNDLE_IMAGE_REF=$(cat operator-bundle.ref)
-          export OPERATOR_INDEX_IMAGE_REF=$(cat operator-index.ref)
-
-          podman load -i operator-image.tar
-          podman load -i operator-bundle.tar
-
-          podman login quay.io --username ${{secrets.QUAY_USERNAME}} --password ${{secrets.QUAY_TOKEN}} --authfile .authfile
-
-          podman push --authfile .authfile ${OPERATOR_IMAGE_REF}
-          podman push --authfile .authfile ${OPERATOR_BUNDLE_IMAGE_REF}
-
-          opm index add -u podman -p podman --bundles ${OPERATOR_BUNDLE_IMAGE_REF} --tag ${OPERATOR_INDEX_IMAGE_REF}
-          podman push --authfile .authfile ${OPERATOR_INDEX_IMAGE_REF}
+          podman images
+          set -x
+          for tag in $(skopeo list-tags --tls-verify=false docker://localhost:5000/${REPO} | jq -r '.Tags[] | select(startswith("pr-${{github.event.pull_request.number}}-"))'); do
+            sha=$(skopeo inspect --tls-verify=false docker://localhost:5000/${REPO}:${tag} | jq -r '.Digest')
+            skopeo copy --dest-creds ${{secrets.QUAY_USERNAME}}:${{secrets.QUAY_TOKEN}} --all --src-tls-verify=false docker://localhost:5000/${REPO}@${sha} docker://${REGISTRY_PREFIX}/${REPO}@${sha}
+            skopeo copy --dest-creds ${{secrets.QUAY_USERNAME}}:${{secrets.QUAY_TOKEN}} --all --src-tls-verify=false docker://localhost:5000/${REPO}@${sha} docker://${REGISTRY_PREFIX}/${REPO}:${tag}
+          done
