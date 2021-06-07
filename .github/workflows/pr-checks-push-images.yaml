@@ -6,8 +6,8 @@ on:
       - master
 
 env:
-  REGISTRY_PREFIX: quay.io/redhat-developer
-  REPO: servicebinding-operator
+  REGISTRY_PREFIX: quay.io/pmacik
+  REPO: sbo-pr-checks
 
 jobs:
   push-operator-images:
@@ -17,9 +17,6 @@ jobs:
     steps:
       - name: Checkout Git Repository
         uses: actions/checkout@v2
-
-      - name: Setup CLI
-        uses: ./.github/actions/setup-cli
 
       - name: Wait for build
         uses: lewagon/wait-on-check-action@1b1630e169116b58a4b933d5ad7effc46d3d312d
@@ -41,10 +38,8 @@ jobs:
 
       - name: Push operator, bundle and index images
         run: |
-          podman images
           set -x
           for tag in $(skopeo list-tags --tls-verify=false docker://localhost:5000/${REPO} | jq -r '.Tags[] | select(startswith("pr-${{github.event.pull_request.number}}-"))'); do
             sha=$(skopeo inspect --tls-verify=false docker://localhost:5000/${REPO}:${tag} | jq -r '.Digest')
-            skopeo copy --dest-creds ${{secrets.QUAY_USERNAME}}:${{secrets.QUAY_TOKEN}} --all --src-tls-verify=false docker://localhost:5000/${REPO}@${sha} docker://${REGISTRY_PREFIX}/${REPO}@${sha}
             skopeo copy --dest-creds ${{secrets.QUAY_USERNAME}}:${{secrets.QUAY_TOKEN}} --all --src-tls-verify=false docker://localhost:5000/${REPO}@${sha} docker://${REGISTRY_PREFIX}/${REPO}:${tag}
           done

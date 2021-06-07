@@ -55,3 +55,14 @@ runs:
           ./hack/start-minikube.sh start --kubernetes-version=v${K8S_VERSION} --driver=$CONTAINER_RUNTIME --cpus $(nproc) --memory 5g
         fi
       shell: bash
+
+    - id: podman-info
+      run: |
+        if [ "${{ inputs.start-minikube }}" == "true" ]; then
+          eval $(minikube podman-env)
+          kubectl get nodes -o yaml
+          kubectl cluster-info
+        fi
+        podman ps
+        podman info
+      shell: bash
