@@ -108,10 +108,24 @@ jobs:
 
           make SKIP_REGISTRY_LOGIN=true -o registry-login test-acceptance-with-bundle
 
-      - name: Collect logs
+      - name: Collect Kube resources
         continue-on-error: true
         run: |
           mkdir -p ${TEST_RESULTS}
+          ns=operators
+          for res in pods deployments; do
+            kubectl get $res -n $ns --ignore-not-found=true -o yaml > ${TEST_RESULTS}/${res}.${ns}.yaml
+          done
+
+          ns=olm
+          for res in catalogsources subscriptions pods deployments; do
+            kubectl get $res -n $ns --ignore-not-found=true -o yaml > ${TEST_RESULTS}/${res}.${ns}.yaml
+          done
+        if: always()
+
+      - name: Collect logs
+        continue-on-error: true
+        run: |
           kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n operators | tail -1) -n operators > ${TEST_RESULTS}/sbo.log
         if: always()
 
@@ -186,11 +200,20 @@ jobs:
           kubectl apply -f out/release.yaml
           make TEST_ACCEPTANCE_START_SBO=remote test-acceptance
 
-      - name: Collect logs
+      - name: Collect Kube resources
         continue-on-error: true
         run: |
           mkdir -p ${TEST_RESULTS}
-          kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n operators | tail -1) -n operators > ${TEST_RESULTS}/sbo.log
+          ns=service-binding-operator
+          for res in pods deployments; do
+            kubectl get $res -n $ns --ignore-not-found=true -o yaml > ${TEST_RESULTS}/${res}.${ns}.yaml
+          done
+        if: always()
+
+      - name: Collect logs
+        continue-on-error: true
+        run: |
+          kubectl logs $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n service-binding-operator | tail -1) -n operators > ${TEST_RESULTS}/sbo.log
         if: always()
 
       - name: Setup Testspace
