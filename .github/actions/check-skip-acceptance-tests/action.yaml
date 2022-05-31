@@ -28,6 +28,9 @@ runs:
           const setLabelsInput = core.getInput('set-labels')
           const setLabels = setLabelsInput.toLowerCase == "true" || setLabelsInput == ""
 
+          const setLabelsInput = core.getInput('set-labels')
+          const setLabels = setLabelsInput.toLowerCase == "true" || setLabelsInput == ""
+
           do {
             const result = await github.rest.pulls.listFiles({
               owner: context.payload.repository.owner.login,
@@ -38,6 +41,10 @@ runs:
             })
 
             let fileSet = result.data.filter(f =>
+                f.filename.startsWith(".github/actions/collect-kube-resources") ||
+                f.filename.startsWith(".github/actions/setup-cli") ||
+                f.filename.startsWith(".github/actions/setup-podman") ||
+                f.filename.startsWith(".github/workflows/pr-checks") ||
                 f.filename.startsWith("apis") ||
                 f.filename.startsWith("build") ||
                 f.filename.startsWith("config") ||

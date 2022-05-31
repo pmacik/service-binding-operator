@@ -1,4 +1,4 @@
-# Continuous Integration
+# Continuous Integrations
 
 Service binding operator uses [OpenShift CI][openshift-ci-docs] for
 continuous integration along with [GitHub Workflows][github-workflows].  The Openshift CI is built using
