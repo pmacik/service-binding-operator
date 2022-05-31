@@ -1,6 +1,7 @@
 SHELL = /usr/bin/env bash -o pipefail
 SHELLFLAGS = -ec
 
+# no acceptance-testing change
 
 # Source for generating docs (one of `local` and `github`)
 SITE_SOURCE ?= local

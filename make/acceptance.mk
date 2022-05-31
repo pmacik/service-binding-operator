@@ -1,6 +1,8 @@
 SHELL = /usr/bin/env bash -o pipefail
 SHELLFLAGS = -ec
 
+# need-acceptance-tests change
+
 # -- Variables for acceptance tests
 TEST_ACCEPTANCE_START_SBO ?= local
 TEST_ACCEPTANCE_OUTPUT_DIR ?= $(OUTPUT_DIR)/acceptance-tests
