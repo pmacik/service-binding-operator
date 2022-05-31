@@ -1,6 +1,11 @@
 # action.yml
 name: 'Check if acceptance tests can be skipped'
 description: 'Check if acceptance tests can be skipped based on the PR content'
+inputs:
+  set-labels:
+    description: "true if 'acceptance-tests-skipped' label is to be set/un-set on PRs."
+    required: false
+    default: "true"
 outputs:
   can_skip:
     description: "true if acceptance teststests can be skipped"
@@ -18,6 +23,10 @@ runs:
           let overallCount = 0;
           let pageSize = 100;
           let maxPages = 30;
+          const labelName = "acceptance-tests-skipped"
+
+          const setLabelsInput = core.getInput('set-labels')
+          const setLabels = setLabelsInput.toLowerCase == "true" || setLabelsInput == ""
 
           do {
             const result = await github.rest.pulls.listFiles({
@@ -29,10 +38,6 @@ runs:
             })
 
             let fileSet = result.data.filter(f =>
-                f.filename.startsWith(".github/actions/collect-kube-resources") ||
-                f.filename.startsWith(".github/actions/setup-cli") ||
-                f.filename.startsWith(".github/actions/setup-podman") ||
-                f.filename.startsWith(".github/workflows/pr-checks") ||
                 f.filename.startsWith("apis") ||
                 f.filename.startsWith("build") ||
                 f.filename.startsWith("config") ||
@@ -66,11 +71,40 @@ runs:
           const canSkip = (overallCount == 0 && currentPage <= maxPages)
           if(canSkip){
             console.log("The PR changes neither SBO release, images nor manifests, nor the acceptance testing framework, nor the related CI. Execution of the acceptance tests CAN be skipped. (See https://issues.redhat.com/browse/APPSVC-1116)")
+            if(setLabels){
+              console.log("Setting label: " + labelName)
+              const result = await github.rest.issues.addLabels({
+                owner: context.payload.repository.owner.login,
+                repo: context.payload.repository.name,
+                issue_number: context.payload.number,
+                labels: [labelName]
+              })
+            }
           } else {
             if (currentPage > maxPages) {
               console.log("Overall the PR changes more than the maximum number of " + (pageSize * maxPages) + " files and so cannot be determined if any of those beyond effect SBO release, images or manifests, or the acceptance testing framework, or the related CI. The acceptance tests CAN NOT be skipped.")
             } else {
               console.log("The PR changes files that effect SBO release, images or manifests, or the acceptance testing framework, or the related CI. The acceptance tests CAN NOT be skipped.")
+            }
+            if(setLabels){
+              const labels = await github.rest.issues.listLabelsOnIssue({
+                owner: context.payload.repository.owner.login,
+                repo: context.payload.repository.name,
+                issue_number: context.payload.number,
+                per_page: 100
+              })
+              console.log(labels.data)
+              console.log(labels.data.filter(f => f.name == labelName))
+              console.log(labels.data.filter(f => f.name == labelName).length)
+              if(labels.data.filter(f => f.name == labelName).length > 0){
+                console.log("Removing label: " + labelName)
+                const result = await github.rest.issues.removeLabel({
+                  owner: context.payload.repository.owner.login,
+                  repo: context.payload.repository.name,
+                  issue_number: context.payload.number,
+                  name: labelName
+                })
+              }
             }
           }
 
