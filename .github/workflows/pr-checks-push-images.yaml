@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  REGISTRY_PREFIX: quay.io/redhat-developer
+  REGISTRY_PREFIX: quay.io/pmacik
   REPO: servicebinding-operator
 
 jobs:

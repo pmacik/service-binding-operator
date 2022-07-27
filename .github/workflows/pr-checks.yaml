@@ -116,7 +116,7 @@ jobs:
           make SKIP_REGISTRY_LOGIN=true -o registry-login test-acceptance-with-bundle
 
       - name: Collect Kube resources
-        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' }}
+        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' && always() }}
         continue-on-error: true
         uses: ./.github/actions/collect-kube-resources
         with:
@@ -137,7 +137,7 @@ jobs:
           testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
 
       - uses: actions/upload-artifact@v2
-        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' }}
+        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' && always() }}
         with:
           name: kubernetes-with-olm-test-results
           path: ${{ env.TEST_RESULTS }}
@@ -196,7 +196,7 @@ jobs:
           make SKIP_REGISTRY_LOGIN=true -o registry-login test-acceptance-with-bundle
 
       - name: Collect Kube resources
-        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' }}
+        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' && always() }}
         continue-on-error: true
         uses: ./.github/actions/collect-kube-resources
         with:
@@ -217,7 +217,7 @@ jobs:
           testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
 
       - uses: actions/upload-artifact@v2
-        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' }}
+        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' && always() }}
         with:
           name: supported-operators-kubernetes
           path: ${{ env.TEST_RESULTS }}
@@ -277,7 +277,7 @@ jobs:
           make SKIP_REGISTRY_LOGIN=true -o registry-login test-acceptance-with-bundle
 
       - name: Collect Kube resources
-        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' }}
+        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' && always() }}
         continue-on-error: true
         uses: ./.github/actions/collect-kube-resources
         with:
@@ -298,7 +298,7 @@ jobs:
           testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
 
       - uses: actions/upload-artifact@v2
-        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' }}
+        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' && always() }}
         with:
           name: supported-operators-kubernetes
           path: ${{ env.TEST_RESULTS }}
@@ -374,7 +374,7 @@ jobs:
           make TEST_ACCEPTANCE_START_SBO=remote test-acceptance
 
       - name: Collect Kube resources
-        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' }}
+        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' && always() }}
         continue-on-error: true
         uses: ./.github/actions/collect-kube-resources
         with:
@@ -394,7 +394,7 @@ jobs:
           testspace [${{ env.TEST_RUN }}]${{ env.TEST_RESULTS }}/TEST*.xml
 
       - uses: actions/upload-artifact@v2
-        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' }}
+        if: ${{ steps.check-skip-acceptance.outputs.can_skip != 'true' && always() }}
         with:
           name: kubernetes-without-olm-test-results
           path: ${{ env.TEST_RESULTS }}

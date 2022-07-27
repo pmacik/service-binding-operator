@@ -9,7 +9,7 @@ env:
   SDK_VERSION: "1.16.0"
   CONTAINER_RUNTIME: "podman"
   ARTIFACTS: "artifacts"
-  REGISTRY_PREFIX: quay.io/redhat-developer
+  REGISTRY_PREFIX: quay.io/pmacik
   REPO: servicebinding-operator
 
 jobs:
