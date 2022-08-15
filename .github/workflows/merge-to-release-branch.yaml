@@ -1,9 +1,9 @@
-name: Merge to master
+name: Merge to Release branches
 
 on:
   push:
     branches:
-      - master
+      - rel_?.?.x
 
 env:
   SDK_VERSION: "1.16.0"
@@ -11,6 +11,7 @@ env:
   K8S_VERSION: "1.19.2"
   CONTAINER_RUNTIME: "docker"
   OPERATOR_REPO_REF: "quay.io/pmacik/sbo-test"
+  OPERATOR_INDEX_IMAGE_REF: "quay.io/pmacik/sbo-test:index-${{ GITHUB_REF }}"
 
 jobs:
   release:
