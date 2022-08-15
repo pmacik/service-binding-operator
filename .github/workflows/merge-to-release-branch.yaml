@@ -1,9 +1,9 @@
-name: Merge to master
+name: Merge to release branches
 
 on:
   push:
     branches:
-      - master
+      - 'rel_*.*.x'
 
 env:
   SDK_VERSION: "1.16.0"
@@ -47,7 +47,9 @@ jobs:
         env:
           QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
           QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
-        run: make release-operator
+        run: |
+          export OPERATOR_INDEX_IMAGE_REF=$OPERATOR_REPO_REF:index-$GITHUB_REF_NAME
+          make release-operator
 
   unit-tests-with-coverage:
     name: Unit tests with code coverage for merge-to-master commits
@@ -67,28 +69,44 @@ jobs:
           make test
 
       - name: Upload Code Coverage Report
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: cover.out
           verbose: true
           fail_ci_if_error: true
 
-  publish-website:
-    name: Publish website
+  security-scan:
+    name: Security vulnerability scan
     runs-on: ubuntu-20.04
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: generate website
-        run: |
-          make site
-          touch ./out/site/.nojekyll
-
-      - name: Publish to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Wait for push
+        uses: lewagon/wait-on-check-action@1b1630e169116b58a4b933d5ad7effc46d3d312d
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./out/site
-          destination_dir: docs
+          ref: ${{ github.ref }}
+          check-name: "Release operator on Quay.io"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 60
+
+      - name: Extract operator image ref
+        id: operator-image-ref
+        run: |
+          export OIR=$(make operator-image-ref)
+          echo "::set-output name=operator-image-ref::${OIR}"
+
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.operator-image-ref.outputs.operator-image-ref }}
+          format: 'sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
