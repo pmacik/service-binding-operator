@@ -1,0 +1,34 @@
+name: "Cherry pick PR to release branches"
+
+on:
+  pull_request_target:
+    branches:
+      - master
+    types: [closed]
+
+env:
+  OPERATOR_REPO_REF: quay.io/pmacik/sbo-test
+
+jobs:
+  cherry_pick_release_v1_1_x:
+    runs-on: ubuntu-latest
+    name: Cherry pick into release/v1.1.x
+    if: contains(github.event.pull_request.labels.*.name, 'release/v1.1.x') && github.event.pull_request.merged
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup SSH for cherry-pick repo
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SBO_CHERRY_PICK_REPO_SSH_PRIVATE_KEY }}
+      - name: Cherry pick into release/v1.1.x
+        uses: pmacik/github-cherry-pick-action@exclude-pr-labels
+        with:
+          cherry-pick-repo: ${{ secrets.SBO_CHERRY_PICK_REPO }}
+          token: ${{ secrets.SBO_CHERRY_PICK_BOT }}
+          branch: release/v1.1.x
+          labels: |
+            cherry-pick
+          title-prefix: "[cherry-pick(release/1.1.x)] "
