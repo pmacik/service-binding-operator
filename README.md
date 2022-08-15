@@ -1,4 +1,4 @@
-# The Service Binding Operator
+# The Service Binding Operator (v1.1.1)
 ## Connecting Applications with Services on Kubernetes and OpenShift
 
 <p align="center">
