@@ -1,0 +1,49 @@
+name: "Cherry pick PR to release branches"
+
+on:
+  pull_request_target:
+    branches:
+      - master
+    types: [closed]
+
+env:
+  OPERATOR_REPO_REF: quay.io/pmacik/sbo-test
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  cherry_pick_release_v1_1_x:
+    runs-on: ubuntu-latest
+    name: Cherry pick into release-v1.1.x
+    if: contains(github.event.pull_request.labels.*.name, 'release/v1.1.x') && github.event.pull_request.merged
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Cherry pick into release-v1.1.x
+        uses: pmacik/github-cherry-pick-action@exclude-pr-labels
+        with:
+          branch: rel_1.1.x
+          labels: |
+            cherry-pick
+          exclude-pr-labels: |
+            release/v1.0.x, release/v1.1.x
+          title-prefix: "cherry-pick(rel_1.1.x): "
+  cherry_pick_release_v1_0_x:
+    runs-on: ubuntu-latest
+    name: Cherry pick into release-v1.0.x
+    if: contains(github.event.pull_request.labels.*.name, 'release/v1.0.x') && github.event.pull_request.merged
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Cherry pick into release-v1.0.x
+        uses: pmacik/github-cherry-pick-action@exclude-pr-labels
+        with:
+          branch: rel_1.0.x
+          labels: |
+            cherry-pick
+          exclude-pr-labels: |
+            release/v1.0.x, release/v1.1.x
+          title-prefix: "cherry-pick(rel_1.0.x): "
