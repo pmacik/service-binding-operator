@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - 'release-v**'
 
 env:
   GO111MODULE: on
