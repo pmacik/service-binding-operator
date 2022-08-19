@@ -95,7 +95,7 @@ Notice the `Author` and `Signed-off-by` lines match. If they don't
 your PR will be rejected by the automated DCO check.
 
 
-## Getting Started
+## Getting Started ...
 * Fork the repository on GitHub
 * Read the [README](README.md) file for build and test instructions
 * Run the examples
