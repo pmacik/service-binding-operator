@@ -1,4 +1,4 @@
-# The Service Binding Operator
+# The Service Binding Operator (a.k.a "SBO")
 ## Connecting Applications with Services on Kubernetes and OpenShift
 
 <p align="center">
