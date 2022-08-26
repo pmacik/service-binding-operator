@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-<loc>https://redhat-developer.github.io/service-binding-operator/devguide/architecture.html</loc>
-<lastmod>2022-08-26T08:46:24.882Z</lastmod>
+<loc>https://pmacik.github.io/service-binding-operator/devguide/architecture.html</loc>
+<lastmod>2022-08-26T09:22:45.533Z</lastmod>
 </url>
 <url>
-<loc>https://redhat-developer.github.io/service-binding-operator/devguide/1.0.1/architecture.html</loc>
-<lastmod>2022-08-26T08:46:24.882Z</lastmod>
+<loc>https://pmacik.github.io/service-binding-operator/devguide/1.1.x/architecture.html</loc>
+<lastmod>2022-08-26T09:22:45.533Z</lastmod>
 </url>
 </urlset>
