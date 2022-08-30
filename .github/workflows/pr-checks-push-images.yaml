@@ -7,8 +7,8 @@ on:
       - 'release-v**.x'
 
 env:
-  REGISTRY_PREFIX: quay.io/redhat-developer
-  REPO: servicebinding-operator
+  REGISTRY_PREFIX: quay.io/pmacik
+  REPO: sbo-test
 
 jobs:
   push-operator-images:
