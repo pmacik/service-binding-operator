@@ -1,13 +1,13 @@
 site:
   title: Service Binding Operator Documentation
-  url: https://redhat-developer.github.io/service-binding-operator
+  url: https://pmacik.github.io/service-binding-operator
   start_page: userguide::intro.adoc
 content:
   sources:
     - branches: HEAD
       start_paths: docs/userguide, docs/devguide
       url: ./
-    - branches: v1.1.1-docs
+    - branches: release-v1.1.x
       start_paths: docs/userguide, docs/devguide
       url: ./
     - branches: v1.1.0-docs
