@@ -10,6 +10,7 @@ env:
   GO111MODULE: on
   K8S_VERSION: "1.19.2"
   CONTAINER_RUNTIME: "docker"
+  OPERATOR_REPO_REF: "quay.io/pmacik/sbo-test"
 
 jobs:
   release:
