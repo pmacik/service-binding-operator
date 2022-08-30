@@ -1,0 +1,39 @@
+name: "Cherry pick PR to release branches"
+
+on:
+  pull_request_target:
+    branches:
+      - master
+    types: [closed]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test ${{ github.event.pull_request.base.ref }} release branch
+    steps:
+      - name: test
+        run: |
+          echo ${{github.event.pull_request.base.ref}}
+          echo 
+  cherry_pick_release:
+    runs-on: ubuntu-latest
+    name: Cherry pick into ${{ github.event.pull_request.base.ref }} release branch
+    if: contains(join(github.event.pull_request.labels.*.name), 'release/') && github.event.pull_request.merged
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup SSH for cherry-pick repo
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SBO_CHERRY_PICK_REPO_SSH_PRIVATE_KEY }}
+      - name: Cherry pick into ${{ github.base_ref }}
+        uses: pmacik/github-cherry-pick-action@exclude-pr-labels
+        with:
+          cherry-pick-repo: ${{ secrets.SBO_CHERRY_PICK_REPO }}
+          token: ${{ secrets.SBO_CHERRY_PICK_BOT_TOKEN }}
+          branch: ${{ github.base_ref }}
+          labels: |
+            cherry-pick
+          title-prefix: "cherry-pick(${{ github.base_ref }}): "
