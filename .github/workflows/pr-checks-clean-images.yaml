@@ -8,7 +8,7 @@ on:
     types: [closed]
 
 env:
-  OPERATOR_REPO_REF: quay.io/redhat-developer/servicebinding-operator
+  OPERATOR_REPO_REF: quay.io/pmacik/sbo-test
 
 jobs:
   clean-operator-images:
