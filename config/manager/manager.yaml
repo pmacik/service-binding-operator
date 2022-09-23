@@ -33,6 +33,7 @@ spec:
         - --zap-encoder=json
         - --zap-log-level=info
         image: controller:latest
+        imagePullPolicy: Always
         name: manager
         livenessProbe:
           httpGet:
@@ -46,6 +47,10 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           periodSeconds: 10
+        ports:
+          - name: pprof
+            containerPort: 6060
+            protocol: TCP
 #        resources:
 #          limits:
 #            cpu: 100m

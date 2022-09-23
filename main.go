@@ -22,6 +22,9 @@ import (
 	"os"
 	"sync"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	v1apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	v1beta1apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
@@ -83,6 +86,13 @@ func getWatchNamespace() (string, error) {
 }
 
 func main() {
+
+	go func() {
+		fmt.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
+	fmt.Println("*************************************")
+
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
