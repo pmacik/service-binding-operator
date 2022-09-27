@@ -1,0 +1,20 @@
+---
+apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: service-binding-valid-01
+spec:
+  services:
+  - group: route.openshift.io
+    version: v1
+    kind: Route
+    name: sbo-perf-svc-valid-01
+  - group: ""
+    version: v1
+    kind: Service
+    name: sbo-perf-svc-valid-01
+  application:
+    name: sbo-perf-app-valid-01
+    group: apps
+    version: v1
+    kind: Deployment

@@ -1,0 +1,15 @@
+---
+apiVersion: servicebinding.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: service-binding-cron-valid-02
+spec:
+  type: busybox
+  service:
+    apiVersion: v1
+    kind: Service
+    name: sbo-perf-svc-valid-02
+  workload:
+    apiVersion: batch/v1
+    kind: CronJob
+    name: sbo-perf-cronjob-valid-02
