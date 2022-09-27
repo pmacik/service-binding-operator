@@ -1,0 +1,189 @@
+kind: Template
+apiVersion: template.openshift.io/v1
+metadata:
+  name: sbo-perf-with-sbr-valid-39
+objects:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: sbo-perf-app-valid-39
+      labels:
+        app: sbo-perf-app-valid-39
+    spec:
+      replicas: 1
+      strategy:
+        type: RollingUpdate
+      selector:
+        matchLabels:
+          app: sbo-perf-app-valid-39
+      template:
+        metadata:
+          labels:
+            app: sbo-perf-app-valid-39
+        spec:
+          containers:
+          - name: sbo-generic-test-app
+            image: quay.io/redhat-developer/sbo-generic-test-app:20200923
+            imagePullPolicy: IfNotPresent
+            ports:
+            - containerPort: 8080
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: sbo-perf-app-valid-39
+      name: sbo-perf-app-valid-39
+    spec:
+      ports:
+      - port: 8080
+        protocol: TCP
+        targetPort: 8080
+      selector:
+        app: sbo-perf-app-valid-39
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      labels:
+        app: sbo-perf-app-valid-39
+      name: sbo-perf-app-valid-39
+      annotations:
+        service.binding/host: path={.spec.host}
+    spec:
+      port:
+        targetPort: 8080
+      to:
+        kind: "Service"
+        name: sbo-perf-app-valid-39
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: sbo-perf-svc-valid-39
+      labels:
+        app: sbo-perf-svc-valid-39
+    spec:
+      replicas: 1
+      strategy:
+        type: RollingUpdate
+      selector:
+        matchLabels:
+          app: sbo-perf-svc-valid-39
+      template:
+        metadata:
+          labels:
+            app: sbo-perf-svc-valid-39
+        spec:
+          containers:
+          - name: busybox
+            image: busybox
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'echo Container 1 is Running ; sleep 3600']
+            ports:
+            - containerPort: 8080
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: sbo-perf-svc-valid-39
+      name: sbo-perf-svc-valid-39
+      annotations:
+        service.binding/portMappings: "path={.spec.ports},elementType=sliceOfMaps,sourceKey=protocol,sourceValue=targetPort"
+    spec:
+      ports:
+      - port: 8080
+        protocol: TCP
+        targetPort: 8080
+      selector:
+        app: sbo-perf-svc-valid-39
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      labels:
+        app: sbo-perf-svc-valid-39
+      name: sbo-perf-svc-valid-39
+      annotations:
+        service.binding/host: path={.spec.host}
+    spec:
+      port:
+        targetPort: 8080
+      to:
+        kind: "Service"
+        name: sbo-perf-svc-valid-39
+  - apiVersion: binding.operators.coreos.com/v1alpha1
+    kind: ServiceBinding
+    metadata:
+      name: service-binding-valid-39
+    spec:
+      services:
+      - group: route.openshift.io
+        version: v1
+        kind: Route
+        name: sbo-perf-svc-valid-39
+      - group: ""
+        version: v1
+        kind: Service
+        name: sbo-perf-svc-valid-39
+      application:
+        name: sbo-perf-app-valid-39
+        group: apps
+        version: v1
+        kind: Deployment
+  - apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      name: sbo-perf-cronjob-valid-39
+    spec:
+      schedule: '@hourly'
+      jobTemplate:
+        spec:
+          template:
+            spec:
+              containers:
+                - name: wakeup
+                  image: busybox
+                  args:
+                    - /bin/sh
+                    - '-c'
+                    - date; echo 'Wake up!'
+              restartPolicy: Never
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: sbo-perf-cronjobs-view
+      labels:
+        servicebinding.io/controller: "true"
+    rules:
+      - apiGroups:
+          - batch
+        resources:
+          - cronjobs
+        verbs:
+          - get
+          - list
+          - watch
+          - update
+          - patch
+  - apiVersion: servicebinding.io/v1beta1
+    kind: ClusterWorkloadResourceMapping
+    metadata:
+      name: cronjobs.batch
+    spec:
+      versions:
+        - version: "*"
+          volumes: .spec.jobTemplate.spec.template.spec.volumes
+          containers:
+            - path: .spec.jobTemplate.spec.template.spec.containers[*]
+            - path: .spec.jobTemplate.spec.template.spec.initContainers[*]
+  - apiVersion: servicebinding.io/v1beta1
+    kind: ServiceBinding
+    metadata:
+      name: service-binding-cron-valid-39
+    spec:
+      type: busybox
+      service:
+        apiVersion: v1
+        kind: Service
+        name: sbo-perf-svc-valid-39
+      workload:
+        apiVersion: batch/v1
+        kind: CronJob
+        name: sbo-perf-cronjob-valid-39

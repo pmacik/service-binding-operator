@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PERIOD="${1:-30}"
+PERIOD="${1:-10}"
 RESULTS=${2:-metrics-$(date "+%F_%T")}
 
 mkdir -p "$RESULTS"
@@ -49,7 +49,8 @@ pod_line() {
     echo "$(strip_unit ${pod_info[2]})"
 }
 
-for namespace in openshift-operators openshift-monitoring openshift-apiserver openshift-kube-apiserver openshift-sdn openshift-operator-lifecycle-manager; do
+#for namespace in openshift-operators openshift-monitoring openshift-apiserver openshift-kube-apiserver openshift-sdn openshift-operator-lifecycle-manager; do
+for namespace in openshift-operators; do
     PODS=($(oc get pods -n $namespace -o json | jq -rc '.items[].metadata.name' | grep -E 'operator|prometheus|apiserver|sdn|ovs|olm|packageserver' | sort))
     for pod in "${PODS[@]}"; do
         echo "Time;CPU_millicores;Memory_MiB" >$(pod_info_file $pod)
@@ -60,7 +61,8 @@ echo "Collecting metrics"
 # Periodical collection
 while true; do
     echo -n "."
-    for namespace in openshift-operators openshift-monitoring openshift-apiserver openshift-kube-apiserver openshift-sdn openshift-operator-lifecycle-manager; do
+    #for namespace in openshift-operators openshift-monitoring openshift-apiserver openshift-kube-apiserver openshift-sdn openshift-operator-lifecycle-manager; do
+    for namespace in openshift-operators; do
         PODS=($(oc get pods -n $namespace -o json | jq -rc '.items[].metadata.name' | grep -E 'operator|prometheus|apiserver|sdn|ovs|olm|packageserver' | sort))
         for pod in "${PODS[@]}"; do
             pod_file=$(pod_info_file $pod)
@@ -68,10 +70,10 @@ while true; do
             pod_line $pod $namespace >>$pod_file
         done
     done
-    for node in ${NODES[@]}; do
-        node_file=$(node_info_file $node)
-        echo -n "$(date -u '+%F %T.%N');" >>$node_file
-        node_line $node >>$node_file
-    done
+    # for node in ${NODES[@]}; do
+    #     node_file=$(node_info_file $node)
+    #     echo -n "$(date -u '+%F %T.%N');" >>$node_file
+    #     node_line $node >>$node_file
+    # done
     sleep ${PERIOD}s
 done
