@@ -22,7 +22,7 @@ test-performance-setup:
 ## Run performance test
 test-performance: export CATSRC_NAME=sbo-test-performance
 test-performance: test-performance-setup deploy-from-index-image
-	OUTPUT_DIR=$(TEST_PERFORMANCE_OUTPUT_DIR) ./test/performance/run.sh $(TEST_PERFORMANCE_NS_PREFIX) $(TEST_PERFORMANCE_USERS_PER_SCENARIO)
+	OUTPUT_DIR=$(TEST_PERFORMANCE_OUTPUT_DIR) SKIP_WORKLOAD_METRCS=true ./test/performance/run.sh $(TEST_PERFORMANCE_NS_PREFIX) $(TEST_PERFORMANCE_USERS_PER_SCENARIO)
 
 .PHONY: test-performance-collect-kpi
 ## Collect KPI (Key Performance Indicators)
